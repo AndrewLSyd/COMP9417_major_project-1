@@ -66,8 +66,5 @@ for (folder in folders) {
              select(-matches("^empty$")))
 }
 
-
-# challenge: huge amount of variables and very few rows (e.g. )
-
-
-raw_data <- list()
+# input_data is a list with 10 elements, aeach of with is a data_frame
+# corresponding to 1 of the input/sensing subfolders
