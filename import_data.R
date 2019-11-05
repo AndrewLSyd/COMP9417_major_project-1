@@ -104,9 +104,59 @@ for (folder in folders) {
                 as.character())
 
 }
-# keep global environment somewhat clean
-rm(col_types, col_names, skip, folder, input_files, time_cols)
 
 # input_data is a list with 10 elements, aeach of with is a data_frame
 # corresponding to 1 of the input/sensing subfolders
 print(input_data %>% map(summary))
+
+# import outputs
+output_sensing_path <- "StudentLife_Dataset/Outputs"
+
+# list to store output tibbles
+output_data <- list()
+
+col_types <-
+  cols(
+    uid = col_character(),
+    type = col_character(),
+    interested = col_integer(),
+    distressed = col_integer(),
+    upset = col_integer(),
+    strong = col_integer(),
+    guilty = col_integer(),
+    scared = col_integer(),
+    hostile  = col_integer(),
+    enthusiastic = col_integer(),
+    proud = col_integer(),
+    irritable = col_integer(),
+    alert = col_integer(),
+    inspired = col_integer(),
+    nervous = col_integer(),
+    determined  = col_integer(),
+    attentive = col_integer(),
+    jittery = col_integer(),
+    active  = col_integer(),
+    afraid  = col_integer()
+  )
+
+col_names <- c("uid", "type", "interested", "distressed", "upset", "strong", "guilty",
+            "scared", "hostile", "enthusiastic", "proud", "irritable", "alert",
+            "inspired", "nervous", "determined", "attentive", "jittery", "active",
+            "afraid")
+
+output_data[["panas"]] <- read_csv(file.path(output_sensing_path, "panas.csv"),
+                                   col_types=col_types, col_names=col_names, skip=1)
+
+# need to calculate the positive/negative affect score
+# excited is missing? according to the PDF there should be a PANAS field called excited?
+output_data[["panas"]] <- output_data[["panas"]] %>% rowwise() %>%
+  mutate(positive_affect= sum(interested, strong , enthusiastic, proud, alert,
+                              inspired, determined, attentive, active, na.rm=TRUE))
+
+# afraid is missing? according to the PDF there should be a PANAS field called afraid?
+output_data[["panas"]] <- output_data[["panas"]] %>% rowwise() %>%
+  mutate(negative_affect = sum(distressed, upset, guilty, scared, hostile, irritable,
+                               nervous , jittery, afraid, na.rm=TRUE))
+
+# keep global environment somewhat clean
+rm(col_types, col_names, skip, folder, input_files, time_cols)
