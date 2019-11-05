@@ -1,9 +1,22 @@
+# a description of the StudentLife Data set can be found at
+# https://studentlife.cs.dartmouth.edu/dataset.html
 library(tidyverse)
+library(lubridate)
 library(stringi)
-library(data.table)
-library(assertthat)
+library(assertr)
 summary.character <- function(object, maxsum, ...) {
   summary(as.factor(object), maxsum, ...)
+}
+
+subset_of <- function(...) {
+  quietly(one_of)(...)$result
+}
+
+fix_names <- function(df) {
+  old_names <- colnames(df)
+  new_names <- stri_replace_all_fixed(old_names, " ", "_")
+  colnames(df) <- new_names
+  df
 }
 
 input_sensing_path <- "StudentLife_Dataset/Inputs/sensing"
@@ -13,14 +26,19 @@ folders <- list.files(
 
 input_files <- list()
 input_data <- list()
+time_cols <- c("time", "start", "end",
+               "timestamp", "start_timestamp", "end_timestamp")
 for (folder in folders) {
-  input_files[[folder]] <-list.files(
-    path = file.path(input_sensing_path, folder),
-    pattern = "*.csv",
-    all.files = TRUE, recursive = TRUE,
-    include.dirs = TRUE)
+  input_files[[folder]] <-
+    list.files(
+      path = file.path(input_sensing_path, folder),
+      pattern = "*.csv",
+      all.files = TRUE, recursive = TRUE,
+      include.dirs = TRUE
+    )
 
-  # deal with empty columsn that exist
+  # deal with empty columsn that exist (likely) due to someone not understanding
+  # Excel to csv conversio)n
   if (folder == "wifi_location") {
     col_types <-
       cols(
@@ -55,6 +73,9 @@ for (folder in folders) {
     skip <- 0
   }
 
+  #Tthis code is designed for readability over pure speed. Restructing the
+  # code to use the data.table package and removing the pipes would likely
+  # result in a significant decrease to runtime.
   input_data[[folder]] <-
     input_files[[folder]] %>%
     map_df(~ file.path(input_sensing_path, folder, .x) %>%
@@ -63,8 +84,29 @@ for (folder in folders) {
                       skip = skip) %>%
              mutate(uid = stri_extract_first_regex(.x, "u\\d{2}")) %>%
              # remove empty column we created since it all na
-             select(-matches("^empty$")))
+             assert(is.na, matches("^empty$")) %>%
+             select(-matches("^empty$"))) %>%
+    #fix_names removes spaces from column names
+    fix_names() %>%
+    # convert linux time stamps into human readable format
+    mutate_at(vars(subset_of(time_cols)), as_datetime) %>%
+    # convert activity factors into human readable format
+    mutate_at(vars(subset_of("activity_inference")),
+              ~ .x %>%
+                factor(levels = 0:3,
+                       labels = c("stationary", "walking", "running", "unknown")) %>%
+                as.character()) %>%
+    # convert audio factors into human readable format
+    mutate_at(vars(subset_of("audio_inference")),
+              ~ .x %>%
+                factor(levels = 0:3,
+                       labels = c("silence", "voice", "noise", "unknown")) %>%
+                as.character())
+
 }
+# keep global environment somewhat clean
+rm(col_types, col_names, skip, folder, input_files, time_cols)
 
 # input_data is a list with 10 elements, aeach of with is a data_frame
 # corresponding to 1 of the input/sensing subfolders
+print(input_data %>% map(summary))
