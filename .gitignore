@@ -38,3 +38,4 @@ vignettes/*.pdf
 
 # ignore big dataset
 StudentLife_Dataset/
+.DS_Store
