@@ -6,6 +6,10 @@ library(lubridate)
 library(stringi)
 library(assertr)
 library(assertthat)
+# the bnstruct package is required but not loaded since it has too many name
+# comflict
+assert_that("bnstruct" %in% installed.packages())
+
 summary.character <- function(object, maxsum, ...) {
   summary(as.factor(object), maxsum, ...)
 }
@@ -161,7 +165,7 @@ for (output_file in output_files) {
 output_data[["flourishing_scale"]] <-
   output_data[["flourishing_scale"]] %>%
   rowwise() %>%
-  mutate(flourishing_scale =
+  mutate(flourishing_scale_raw =
            i_lead_a_purposeful_and_meaningful_life
          + my_social_relationships_are_supportive_and_rewarding
          + i_am_engaged_and_interested_in_my_daily_activities
@@ -169,7 +173,32 @@ output_data[["flourishing_scale"]] <-
          + i_am_competent_and_capable_in_the_activities_that_are_important_to_me
          + i_am_a_good_person_and_live_a_good_life
          + i_am_optimistic_about_my_future
-         + people_respect_me)
+         + people_respect_me) %>%
+  ungroup()
+
+# impute missing values
+flourishing_scale_matrix <-
+  output_data[["flourishing_scale"]] %>%
+  select(i_lead_a_purposeful_and_meaningful_life,
+         my_social_relationships_are_supportive_and_rewarding,
+         i_am_engaged_and_interested_in_my_daily_activities,
+         i_actively_contribute_to_the_happiness_and_well_being_of_others,
+         i_am_competent_and_capable_in_the_activities_that_are_important_to_me,
+         i_am_a_good_person_and_live_a_good_life,
+         i_am_optimistic_about_my_future,
+         people_respect_me) %>%
+  as.matrix()
+
+flourishing_scale_imputated <-
+  bnstruct::knn.impute(flourishing_scale_matrix, k = 5, cat.var = numeric(0)) %>%
+  rowSums()
+
+output_data[["flourishing_scale"]] <-
+  output_data[["flourishing_scale"]] %>%
+  mutate(flourishing_scale_raw = flourishing_scale_imputated)
+
+# clean up global environment after imputation
+rm(flourishing_scale_matrix, flourishing_scale_imputated)
 
 # basic test we have sum all relevant columns
 id_cols <- c("uid", "type")
