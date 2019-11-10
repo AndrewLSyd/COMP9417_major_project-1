@@ -39,6 +39,8 @@ vignettes/*.pdf
 
 # ignore big dataset
 StudentLife_Dataset/
+specification/
+
 #ignore weird Mac files
 .DS_Store
 
