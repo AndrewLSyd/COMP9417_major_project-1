@@ -1,3 +1,4 @@
+# load libraries and define helper functions -----------------------------------
 # a description of the StudentLife Data set can be found at
 # https://studentlife.cs.dartmouth.edu/dataset.html
 library(tidyverse)
@@ -30,6 +31,18 @@ clean_column_names <- function(df) {
   df
 }
 
+file_to_name <- function(file_name) {
+  file_name %>%
+    # camelCase to snake_case
+    stri_replace_all_regex("([a-z])([A-Z])", "$1_$2") %>%
+    # make everything lower case
+    stri_trans_tolower() %>%
+    # remove file extension
+    stri_replace_all_fixed(".csv", "")
+}
+
+
+# import input files -----------------------------------------------------------
 input_sensing_path <- "StudentLife_Dataset/Inputs/sensing"
 
 folders <-
@@ -88,7 +101,7 @@ for (folder in folders) {
     skip <- 0
   }
 
-  #Tthis code is designed for readability over pure speed. Restructing the
+  # This code is designed for readability over pure speed. Restructing the
   # code to use the data.table package and removing the pipes would likely
   # result in a significant decrease to runtime.
   input_data[[folder]] <-
@@ -109,7 +122,8 @@ for (folder in folders) {
     mutate_at(vars(subset_of("activity_inference")),
               ~ .x %>%
                 factor(levels = 0:3,
-                       labels = c("stationary", "walking", "running", "unknown")) %>%
+                       labels = c("stationary", "walking", "running",
+                                  "unknown")) %>%
                 as.character()) %>%
     # convert audio factors into human readable format
     mutate_at(vars(subset_of("audio_inference")),
@@ -122,20 +136,12 @@ for (folder in folders) {
 
 # input_data is a list with 10 elements, aeach of with is a data_frame
 # corresponding to 1 of the input/sensing subfolders
+
+# check that results look reasonable
 print(input_data %>% map(summary))
 
-# import outputs ----------
+# import outputs ---------------------------------------------------------------
 output_sensing_path <- "StudentLife_Dataset/Outputs"
-
-file_to_name <- function(file_name) {
-  file_name %>%
-    # camelCase to snake_case
-    stri_replace_all_regex("([a-z])([A-Z])", "$1_$2") %>%
-    # make everything lower case
-    stri_trans_tolower() %>%
-    # remove file extension
-    stri_replace_all_fixed(".csv", "")
-}
 
 output_files <-
   list.files(
@@ -152,15 +158,7 @@ for (output_file in output_files) {
     clean_column_names() %>%
     mutate_if(is.double, as.integer)
 }
-
-##TODO: agree how to deal with missing values
-# main choice:
-#  1) remove observations (not recommended we don't have many values)
-#  2) mean imputation easy to start off
-#  3) row means??
-#  4) something smart (e.g. Bayesian PCA as per
-#     https://www.omicsonline.org/open-access/a-comparison-of-six-methods-for-missing-data-imputation-2155-6180-1000224.pdf)
-
+rm(output_file)
 
 output_data[["flourishing_scale"]] <-
   output_data[["flourishing_scale"]] %>%
@@ -195,7 +193,7 @@ flourishing_scale_imputated <-
 
 output_data[["flourishing_scale"]] <-
   output_data[["flourishing_scale"]] %>%
-  mutate(flourishing_scale_raw = flourishing_scale_imputated)
+  mutate(flourishing_scale_imp = flourishing_scale_imputated)
 
 # clean up global environment after imputation
 rm(flourishing_scale_matrix, flourishing_scale_imputated)
@@ -203,54 +201,147 @@ rm(flourishing_scale_matrix, flourishing_scale_imputated)
 # basic test we have sum all relevant columns
 id_cols <- c("uid", "type")
 id_cols <- enquo(id_cols)
-agg_cols <- c("flourishing_scale")
-agg_cols <- enquo(agg_cols)
+agg_raw_cols <- c("flourishing_scale_raw")
+agg_raw_cols <- enquo(agg_raw_cols)
+agg_imp_cols <- c("flourishing_scale_imp")
+agg_imp_cols <- enquo(agg_imp_cols)
 sum_original <-
   output_data %$%
   flourishing_scale %>%
-  select(-(!!id_cols), -(!!agg_cols)) %>%
+  filter(!is.na(flourishing_scale_raw)) %>%
+  select(-(!!id_cols), -(!!agg_raw_cols), -(!!agg_imp_cols)) %>%
   sum(na.rm = TRUE)
 
-sum_aggregate <-
+sum_aggregate_raw <-
   output_data %$%
   flourishing_scale %>%
-  select(!!agg_cols) %>%
+  # check that all imputed values are not null
+  verify(!is.na(flourishing_scale_imp)) %>%
+  # check that all imputated values agree to raw values
+  verify(is.na(flourishing_scale_raw) | flourishing_scale_imp == flourishing_scale_raw) %>%
+  select(!!agg_raw_cols) %>%
   sum(na.rm = TRUE)
+
 # this test is expected to fail since we are yet
 # to do any imputation and have missing values
-assert_that(are_equal(sum_original, sum_aggregate))
-rm(id_cols, agg_cols, sum_original, sum_aggregate)
+assert_that(are_equal(sum_original, sum_aggregate_raw))
+rm(id_cols, sum_original, sum_aggregate_raw)
 
 # need to calculate the positive/negative affect score
-# excited is missing? according to the PDF there should be a PANAS field called excited?
+# excited and ashamed are missing from the raw data
 output_data[["panas"]] <-
   output_data[["panas"]] %>%
   rowwise() %>%
-  mutate(panas_pos = sum(interested, strong, enthusiastic, proud, alert,
-                         inspired, determined, attentive, active)) %>%
-  mutate(panas_neg = sum(distressed, upset, guilty, scared, hostile, irritable,
-                         nervous, jittery, afraid)) %>%
+  mutate(panas_pos_raw = sum(interested, strong, enthusiastic, proud, alert,
+                             inspired, determined, attentive, active),
+         panas_neg_raw = sum(distressed, upset, guilty, scared, hostile,
+                             irritable, nervous, jittery, afraid)) %>%
   ungroup()
+
+# impute missing values
+panas_scale_matrix <-
+  output_data[["panas"]] %>%
+  select(interested,
+         strong,
+         enthusiastic,
+         proud,
+         alert,
+         inspired,
+         determined,
+         attentive,
+         active,
+         distressed,
+         upset,
+         guilty,
+         scared,
+         hostile,
+         irritable,
+         nervous,
+         jittery,
+         afraid) %>%
+  mutate_if(is.integer, as.double) %>%
+  as.matrix()
+
+panas_scale_imputated <-
+  bnstruct::knn.impute(panas_scale_matrix, k = 5, cat.var = numeric(0)) %>%
+  as_tibble() %>%
+  rowwise() %>%
+  mutate(panas_pos_imp = sum(interested, strong, enthusiastic, proud, alert,
+                             inspired, determined, attentive, active),
+         panas_neg_imp = sum(distressed, upset, guilty, scared, hostile,
+                             irritable, nervous, jittery, afraid)) %>%
+  ungroup() %>%
+  select(panas_pos_imp, panas_neg_imp)
+
+output_data[["panas"]] <-
+  output_data[["panas"]] %>%
+  mutate(panas_pos_imp = panas_scale_imputated$panas_pos_imp,
+         panas_neg_imp = panas_scale_imputated$panas_neg_imp)
+
+rm(panas_scale_matrix, panas_scale_imputated)
 
 # basic test we have sum all relevant columns
 id_cols <- c("uid", "type")
 id_cols <- enquo(id_cols)
-agg_cols <- c("panas_pos", "panas_neg")
-agg_cols <- enquo(agg_cols)
-sum_original <-
+pos_cols <- c("interested", "strong", "enthusiastic", "proud", "alert",
+              "inspired", "determined", "attentive", "active")
+pos_cols <- enquo(pos_cols)
+neg_cols <- c("distressed", "upset", "guilty", "scared", "hostile",
+              "irritable", "nervous", "jittery", "afraid")
+neg_cols <- enquo(neg_cols)
+agg_raw_cols <- c("panas_pos_raw", "panas_neg_raw")
+agg_raw_cols <- enquo(agg_raw_cols)
+agg_imp_cols <- c("panas_pos_imp", "panas_neg_imp")
+agg_imp_cols <- enquo(agg_imp_cols)
+
+sum_original_pos <-
   output_data %$%
   panas %>%
-  select(-(!!id_cols), -(!!agg_cols)) %>%
+  # check that all imputed values are not null
+  verify(!is.na(panas_pos_imp)) %>%
+  # check that all imputated values agree to raw values
+  verify(is.na(panas_pos_raw) | panas_pos_raw == panas_pos_imp) %>%
+  filter(!is.na(panas_pos_raw)) %>%
+  select(!!pos_cols) %>%
   sum(na.rm = TRUE)
+
+sum_original_neg <-
+  output_data %$%
+  panas %>%
+  # check that all imputed values are not null
+  verify(!is.na(panas_neg_imp)) %>%
+  # check that all imputated values agree to raw values
+  verify(is.na(panas_neg_raw) | panas_neg_raw == panas_neg_imp) %>%
+  filter(!is.na(panas_neg_raw)) %>%
+  select(!!neg_cols) %>%
+  sum(na.rm = TRUE)
+
 
 sum_aggregate <-
   output_data %$%
   panas %>%
-  select(!!agg_cols) %>%
+  select(!!agg_raw_cols) %>%
   sum(na.rm = TRUE)
+
 # this test is expected to fail since we are yet
 # to do any imputation and have missing values
-assert_that(are_equal(sum_original, sum_aggregate))
-rm(id_cols, agg_cols, sum_original, sum_aggregate)
+assert_that(are_equal(sum_original_pos + sum_original_neg, sum_aggregate))
+rm(id_cols, sum_original_pos, sum_original_neg,
+   agg_raw_cols, agg_imp_cols, pos_cols, neg_cols, sum_aggregate)
 # keep global environment somewhat clean
 rm(col_types, col_names, skip, folder, input_files, time_cols)
+
+output_targets <-
+  output_data %$%
+  left_join(panas, flourishing_scale, by = c("uid", "type")) %>%
+  select(uid, type,
+         panas_pos_raw, panas_neg_raw, flourishing_scale_raw,
+         panas_pos_imp, panas_neg_imp, flourishing_scale_imp)
+
+output_targets <-
+  output_targets %>%
+  left_join(.,
+            mutate_if(., is.numeric, ~ .x >= median(.x, na.rm = TRUE)) %>%
+              mutate_if(is.logical, as.integer) %>%
+              rename_if(is.integer, list(~stri_c(., "_class"))),
+            by = c("uid", "type"))
