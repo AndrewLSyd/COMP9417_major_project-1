@@ -5,6 +5,7 @@
 
 # Session Data files
 .RData
+.RDataTmp
 
 # User-specific files
 .Ruserdata
@@ -38,5 +39,10 @@ vignettes/*.pdf
 
 # ignore big dataset
 StudentLife_Dataset/
-
 specification/
+
+#ignore weird Mac files
+.DS_Store
+
+# ignore rendered markdown file
+README.html
