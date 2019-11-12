@@ -346,3 +346,6 @@ output_targets <-
               mutate_if(is.logical, as.integer) %>%
               rename_if(is.integer, list(~stri_c(., "_class"))),
             by = c("uid", "type"))
+
+output_targets %>%
+  write_csv("preprocessed_data/target.csv")
