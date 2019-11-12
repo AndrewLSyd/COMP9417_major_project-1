@@ -118,7 +118,7 @@ for (folder in folders) {
     #clean_column_names removes spaces from column names
     clean_column_names() %>%
     # convert linux time stamps into human readable format
-    mutate_at(vars(subset_of(time_cols)), as_datetime) %>%
+    mutate_at(vars(subset_of(time_cols)), . %>% as_datetime(tz = "US/Eastern")) %>%
     # convert activity factors into human readable format
     mutate_at(vars(subset_of("activity_inference")),
               ~ .x %>%
