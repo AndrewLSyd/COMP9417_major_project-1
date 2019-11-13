@@ -346,3 +346,19 @@ output_targets <-
               mutate_if(is.logical, as.integer) %>%
               rename_if(is.integer, list(~stri_c(., "_class"))),
             by = c("uid", "type"))
+
+# output -----------------------------------------------------------------------
+target_out_path <- "preprocessed_data/"
+
+output_targets_pre <- output_targets %>%
+  filter(type == "pre") %>%
+  rename_at(vars(-one_of(c("uid","type"))), ~paste0(., '_pre')) %>%
+  select(-type)
+
+output_targets_post <- output_targets %>%
+  filter(type == "post") %>%
+  rename_at(vars(-one_of(c("uid","type"))), ~paste0(., '_post')) %>%
+  select(-type)
+
+write_csv(output_targets_pre, paste0(target_out_path, "targets_pre.csv"))
+write_csv(output_targets_post, paste0(target_out_path, "targets_post.csv"))
