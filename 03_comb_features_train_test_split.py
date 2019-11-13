@@ -13,7 +13,7 @@ from math import ceil
 
 # CONSTANTS -------------------------------------------------------------------
 FPATH_PREPROCESSED = "preprocessed_data"
-FPATH_PROCESSED = "processed_data"
+FPATH_TRAIN_TEST = "train_test_data"
 TEST_SIZE = 0.2
 RANDOM_STATE = 123
 TARGET_LIST = ["panas_pos_raw_pre", "panas_neg_raw_pre", 
@@ -64,21 +64,31 @@ data_test = data.iloc[test_indices, :]
 
 # just the features
 X_train = data_train.drop(TARGET_LIST, axis="columns")
-X_train.to_csv(os.path.join(FPATH_PROCESSED, "X_train.csv"))
+X_train.to_csv(os.path.join(FPATH_TRAIN_TEST, "X_train.csv"))
 
 X_test = data_test.drop(TARGET_LIST, axis="columns")
-X_test.to_csv(os.path.join(FPATH_PROCESSED, "X_test.csv"))
+X_test.to_csv(os.path.join(FPATH_TRAIN_TEST, "X_test.csv"))
 
 # now the targets
-for target in TARGET_LIST:
-    # creating a df for each target
-    exec("y_train_" + target + " = data_train.loc[:, ['uid', '" + target + "']]")
-    # outputting to CSV
-    exec("y_train_" + target + ".to_csv(os.path.join(FPATH_PROCESSED, 'y_train_"
-                                                     + target + ".csv'))")    
-    exec("y_test_" + target + " = data_test.loc[:, ['uid', '" + target + "']]")
-    exec("y_test_" + target + ".to_csv(os.path.join(FPATH_PROCESSED, 'y_test_"
-                                                     + target + ".csv'))")    
+uid_target = ["uid"]
+uid_target.extend(TARGET_LIST)
+y_train = data_train.loc[:, uid_target]
+y_train.to_csv(os.path.join(FPATH_TRAIN_TEST, "y_train.csv"))
+
+y_test = data_test.loc[:, uid_target]
+y_test.to_csv(os.path.join(FPATH_TRAIN_TEST, "y_test.csv"))
+
+# if we want each target to be in its own array and export each one separately
+# we can use the below code
+#for target in TARGET_LIST:
+#    # creating a df for each target
+#    exec("y_train_" + target + " = data_train.loc[:, ['uid', '" + target + "']]")
+#    # outputting to CSV
+#    exec("y_train_" + target + ".to_csv(os.path.join(FPATH_TRAIN_TEST, 'y_train_"
+#                                                     + target + ".csv'))")    
+#    exec("y_test_" + target + " = data_test.loc[:, ['uid', '" + target + "']]")
+#    exec("y_test_" + target + ".to_csv(os.path.join(FPATH_TRAIN_TEST, 'y_test_"
+#                                                     + target + ".csv'))")    
 
 # clean up namespace
-del data, data_test, data_train, df, df_list, index, target, test_indices
+del data, data_test, data_train, df, df_list, index, test_indices, uid_target
