@@ -16,14 +16,14 @@ FPATH_PREPROCESSED = "preprocessed_data"
 FPATH_TRAIN_TEST = "train_test_data"
 TEST_SIZE = 0.2
 RANDOM_STATE = 123
-TARGET_LIST = ["panas_pos_raw_pre", "panas_neg_raw_pre", 
+TARGET_LIST = ["panas_pos_raw_pre", "panas_neg_raw_pre",
                "flourishing_scale_raw_pre", "panas_pos_imp_pre",
                "panas_neg_imp_pre", "flourishing_scale_imp_pre",
                "panas_pos_raw_class_pre", "panas_neg_raw_class_pre",
                "flourishing_scale_raw_class_pre", "panas_pos_imp_class_pre",
                "panas_neg_imp_class_pre", "flourishing_scale_imp_class_pre",
-               "panas_pos_raw_post", "panas_neg_raw_post", 
-               "flourishing_scale_raw_post", "panas_pos_imp_post", 
+               "panas_pos_raw_post", "panas_neg_raw_post",
+               "flourishing_scale_raw_post", "panas_pos_imp_post",
                "panas_neg_imp_post", "flourishing_scale_imp_post",
                "panas_pos_raw_class_post", "panas_neg_raw_class_post",
                "flourishing_scale_raw_class_post", "panas_pos_imp_class_post",
@@ -31,11 +31,19 @@ TARGET_LIST = ["panas_pos_raw_pre", "panas_neg_raw_pre",
 
 # DATA IMPORT -----------------------------------------------------------------
 # list all files in the features folder
-df_list = [pd.read_csv(os.path.join(FPATH_PREPROCESSED, file)) for file in 
+df_list_raw = [pd.read_csv(os.path.join(FPATH_PREPROCESSED, file)) for file in
              os.listdir(FPATH_PREPROCESSED)]
+df_list = []
+
+# some inputs do not have a column name for uid. this breaks the merging
+for df in df_list_raw:
+    if "uid" not in df:
+        df_list.append(df.rename(columns={"Unnamed: 0":"uid"}))
+    else:
+        df_list.append(df)
 
 # importing CSVs and joining into one dataframe
-for index, df in enumerate(df_list):    
+for index, df in enumerate(df_list):
     if index == 0:
         data = pd.DataFrame(df)
     else:
@@ -85,10 +93,11 @@ y_test.to_csv(os.path.join(FPATH_TRAIN_TEST, "y_test.csv"))
 #    exec("y_train_" + target + " = data_train.loc[:, ['uid', '" + target + "']]")
 #    # outputting to CSV
 #    exec("y_train_" + target + ".to_csv(os.path.join(FPATH_TRAIN_TEST, 'y_train_"
-#                                                     + target + ".csv'))")    
+#                                                     + target + ".csv'))")
 #    exec("y_test_" + target + " = data_test.loc[:, ['uid', '" + target + "']]")
 #    exec("y_test_" + target + ".to_csv(os.path.join(FPATH_TRAIN_TEST, 'y_test_"
-#                                                     + target + ".csv'))")    
+#                                                     + target + ".csv'))")
 
 # clean up namespace
-del data, data_test, data_train, df, df_list, index, test_indices, uid_target
+del data, data_test, data_train, df, df_list, df_list_raw, index, test_indices\
+, uid_target
