@@ -54,7 +54,7 @@ for index, df in enumerate(df_list):
 # there may be NANs in the test set which is not ideal.
 # getting the indices where the targets are not NANs
 not_nan_indices = data[np.logical_not(
-        data.loc[:, "flourishing_scale_imp_post"].isnull())].index
+        data.loc[:, "flourishing_scale_raw_post"].isnull())].index
 
 # selecting (20% * total number of obs) at random from the targets that are not
 # NANs
