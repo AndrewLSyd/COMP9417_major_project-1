@@ -1,5 +1,6 @@
 ,uid,panas_pos_raw_pre,panas_neg_raw_pre,flourishing_scale_raw_pre,panas_pos_imp_pre,panas_neg_imp_pre,flourishing_scale_imp_pre,panas_pos_raw_class_pre,panas_neg_raw_class_pre,flourishing_scale_raw_class_pre,panas_pos_imp_class_pre,panas_neg_imp_class_pre,flourishing_scale_imp_class_pre,panas_pos_raw_post,panas_neg_raw_post,flourishing_scale_raw_post,panas_pos_imp_post,panas_neg_imp_post,flourishing_scale_imp_post,panas_pos_raw_class_post,panas_neg_raw_class_post,flourishing_scale_raw_class_post,panas_pos_imp_class_post,panas_neg_imp_class_post,flourishing_scale_imp_class_post
 0,u00,32.0,,,32.0,33.0,49.0,1.0,,,1.0,1.0,1.0,31.0,24.0,45.0,31.0,24.0,45.0,1.0,1.0,1.0,1.0,1.0,1.0
+1,u01,30.0,19.0,45.0,30.0,19.0,45.0,1.0,1.0,1.0,1.0,1.0,1.0,27.0,17.0,46.0,27.0,17.0,46.0,0.0,0.0,1.0,0.0,0.0,1.0
 2,u02,23.0,15.0,46.0,23.0,15.0,46.0,0.0,0.0,1.0,0.0,0.0,1.0,28.0,13.0,44.0,28.0,13.0,44.0,0.0,0.0,0.0,0.0,0.0,0.0
 4,u04,27.0,14.0,27.0,27.0,14.0,27.0,0.0,0.0,0.0,0.0,0.0,0.0,34.0,19.0,33.0,34.0,19.0,33.0,1.0,1.0,0.0,1.0,1.0,0.0
 7,u08,30.0,26.0,,30.0,26.0,38.0,1.0,1.0,,1.0,1.0,0.0,,,,,,,,,,,,

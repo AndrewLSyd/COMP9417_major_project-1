@@ -14,7 +14,7 @@ from math import ceil
 # CONSTANTS -------------------------------------------------------------------
 FPATH_PREPROCESSED = "preprocessed_data"
 FPATH_TRAIN_TEST = "train_test_data"
-TEST_SIZE = 0.2
+TEST_SIZE = 0.175
 RANDOM_STATE = 123
 TARGET_LIST = ["panas_pos_raw_pre", "panas_neg_raw_pre",
                "flourishing_scale_raw_pre", "panas_pos_imp_pre",
