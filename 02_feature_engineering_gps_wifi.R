@@ -43,7 +43,7 @@
 
 # CONSTANTS --------------------------------------------------------------------
 FPATH_OUT <- "preprocessed_data/features_gps_wifi.csv"
-DATE_TERM_START <- strptime("18.03.2013", format = "%d.%m.%Y")
+DATE_TERM_START <- strptime("18.03.2013", format = "%d.%m.%Y", tz = "US/Eastern")
 # value used when time_elapsed cannot be calculated. 20m represents the median
 # value of time elapsed
 TIME_ELAPSED_IMPUTE <- 1200
@@ -63,11 +63,11 @@ spread_join <- function(df, var, var_str, first=FALSE){
     # has a new column for each week
     var <- var %>%
         spread(week, var_str) %>%
-        rename_at(vars(-uid), funs(paste0(var_str, "_wk_", .)))
+        rename_at(vars(-uid), list(~ paste0(var_str, "_wk_", .)))
     if (first){
         return(as_tibble(var))
     }
-    df <- left_join(df, var, by=c("uid"))
+    df <- left_join(df, var, by = c("uid"))
     return(df)
 }
 
@@ -138,10 +138,10 @@ input_data$gps <- create_first_last_obs(input_data$gps)
 input_data$gps <- input_data$gps %>%
   mutate(dist_moved_long = longitude - lag(longitude)) %>%
   mutate(dist_moved_lat = latitude - lag(latitude)) %>%
-  mutate(dist_moved = sqrt(dist_moved_long ** 2 + dist_moved_lat ** 2)) %>%
+  mutate(dist_moved = sqrt(dist_moved_long ^ 2 + dist_moved_lat ^ 2)) %>%
   # if it's the first obs, zero it out as the previous records is from another
   # uid
-  mutate(dist_moved = dist_moved * 0 ** first_obs) %>%
+  mutate(dist_moved = dist_moved * 0 ^ first_obs) %>%
   replace_na(list(dist_moved = 0)) %>%
   select(-one_of(c("first_obs", "last_obs", "dist_moved_lat",
                    "dist_moved_long")))
@@ -199,21 +199,21 @@ features_wifi_gps <- spread_join(features_wifi_gps, outdoor_time,
 # time spent indoors using provider == "gps" as a proxy
 indoor_time <- input_data$gps %>%
   group_by(uid, week) %>%
-  filter(provider != "gps") %>%
+  filter(provider %in% c("network", "fused")) %>%
   summarise(indoor_time = sum(time_elapsed, na.rm = TRUE))
 features_wifi_gps <- spread_join(features_wifi_gps, indoor_time,
                                  "indoor_time")
 # distance moved indoors using provider == "gps" as a proxy
 indoor_dist <- input_data$gps %>%
   group_by(uid, week) %>%
-  filter(provider != "gps") %>%
+  filter(provider %in% c("network", "fused")) %>%
   summarise(indoor_dist = sum(dist_moved, na.rm = TRUE))
 features_wifi_gps <- spread_join(features_wifi_gps, indoor_dist,
                                  "indoor_dist")
 # distance moved outdoors using provider == "gps" as a proxy
 outdoors_dist <- input_data$gps %>%
   group_by(uid, week) %>%
-  filter(provider != "gps") %>%
+  filter(provider == "gps") %>%
   summarise(outdoors_dist = sum(dist_moved, na.rm = TRUE))
 features_wifi_gps <- spread_join(features_wifi_gps, outdoors_dist,
                                  "outdoors_dist")
