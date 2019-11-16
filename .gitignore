@@ -47,3 +47,6 @@ specification/
 # ignore rendered markdown file
 README.html
 DATA_DICTIONARY.html
+
+# ignore jupyter notebook temp files
+*checkpoint.ipynb
