@@ -67,7 +67,7 @@ for i, user in enumerate(df_list):
             var = sum(var) / len(var)
             data[i].append(var)
         except ZeroDivisionError:
-            data[i].append(0)
+            data[i].append(None)
 
 df_locktime_mean = pd.DataFrame(data, columns = ['uid', 'locktime_mean_wk_1', 'locktime_mean_wk_2', 'locktime_mean_wk_3',
                                                 'locktime_mean_wk_4', 'locktime_mean_wk_5', 'locktime_mean_wk_6',
@@ -110,7 +110,7 @@ for i, user in enumerate(df_list):
         try:
             data[i].append(np.percentile(var, 50))
         except:
-            data[i].append(0)
+            data[i].append(None)
 
 df_locktime_median = pd.DataFrame(data, columns = ['uid', 'locktime_median_wk_1', 'locktime_median_wk_2', 'locktime_median_wk_3',
                                                 'locktime_median_wk_4', 'locktime_median_wk_5', 'locktime_median_wk_6',
@@ -133,7 +133,7 @@ for i, user in enumerate(df_list):
         try:
             data[i].append(np.percentile(var, 25))
         except:
-            data[i].append(0)
+            data[i].append(None)
 
 df_locktime_q1 = pd.DataFrame(data, columns = ['uid', 'locktime_q1_wk_1', 'locktime_q1_wk_2', 'locktime_q1_wk_3',
                                                 'locktime_q1_wk_4', 'locktime_q1_wk_5', 'locktime_q1_wk_6',
@@ -156,7 +156,7 @@ for i, user in enumerate(df_list):
         try:
             data[i].append(np.percentile(var, 75))
         except:
-            data[i].append(0)
+            data[i].append(None)
 
 df_locktime_q3 = pd.DataFrame(data, columns = ['uid', 'locktime_q3_wk_1', 'locktime_q3_wk_2', 'locktime_q3_wk_3',
                                                 'locktime_q3_wk_4', 'locktime_q3_wk_5', 'locktime_q3_wk_6',
@@ -179,7 +179,7 @@ for i, user in enumerate(df_list):
                 if row['duration'] < var:
                     var = row['duration']
         if var == 86400:
-            var = 0
+            var = None
         data[i].append(var)
 
 df_locktime_min = pd.DataFrame(data, columns=['uid', 'locktime_min_wk_1', 'locktime_min_wk_2', 'locktime_min_wk_3',
@@ -202,6 +202,8 @@ for i, user in enumerate(df_list):
             elif row['start_datetime'] > week_list[j]:
                 if row['duration'] > var:
                     var = row['duration']
+        if var == 0:
+            var = None
         data[i].append(var)
 
 df_locktime_max = pd.DataFrame(data, columns=['uid', 'locktime_max_wk_1', 'locktime_max_wk_2', 'locktime_max_wk_3',

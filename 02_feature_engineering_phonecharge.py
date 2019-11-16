@@ -68,7 +68,7 @@ for i, user in enumerate(df_list):
             var = sum(var) / len(var)
             data[i].append(var)
         except ZeroDivisionError:
-            data[i].append(0)
+            data[i].append(None)
 
 df_chargetime_mean = pd.DataFrame(data, columns = ['uid', 'chargetime_mean_wk_1', 'chargetime_mean_wk_2', 'chargetime_mean_wk_3',
                                                 'chargetime_mean_wk_4', 'chargetime_mean_wk_5', 'chargetime_mean_wk_6',
@@ -111,7 +111,7 @@ for i, user in enumerate(df_list):
         try:
             data[i].append(np.percentile(var, 50))
         except:
-            data[i].append(0)
+            data[i].append(None)
 
 df_chargetime_median = pd.DataFrame(data, columns = ['uid', 'chargetime_median_wk_1', 'chargetime_median_wk_2', 'chargetime_median_wk_3',
                                                 'chargetime_median_wk_4', 'chargetime_median_wk_5', 'chargetime_median_wk_6',
@@ -134,7 +134,7 @@ for i, user in enumerate(df_list):
         try:
             data[i].append(np.percentile(var, 25))
         except:
-            data[i].append(0)
+            data[i].append(None)
 
 df_chargetime_q1 = pd.DataFrame(data, columns = ['uid', 'chargetime_q1_wk_1', 'chargetime_q1_wk_2', 'chargetime_q1_wk_3',
                                                 'chargetime_q1_wk_4', 'chargetime_q1_wk_5', 'chargetime_q1_wk_6',
@@ -157,7 +157,7 @@ for i, user in enumerate(df_list):
         try:
             data[i].append(np.percentile(var, 75))
         except:
-            data[i].append(0)
+            data[i].append(None)
 
 df_chargetime_q3 = pd.DataFrame(data, columns = ['uid', 'chargetime_q3_wk_1', 'chargetime_q3_wk_2', 'chargetime_q3_wk_3',
                                                 'chargetime_q3_wk_4', 'chargetime_q3_wk_5', 'chargetime_q3_wk_6',
@@ -180,7 +180,7 @@ for i, user in enumerate(df_list):
                 if row['duration'] < var:
                     var = row['duration']
         if var == 86400:
-            var = 0
+            var = None
         data[i].append(var)
 
 df_chargetime_min = pd.DataFrame(data, columns=['uid', 'chargetime_min_wk_1', 'chargetime_min_wk_2', 'chargetime_min_wk_3',
@@ -203,6 +203,8 @@ for i, user in enumerate(df_list):
             elif row['start_datetime'] > week_list[j]:
                 if row['duration'] > var:
                     var = row['duration']
+        if var == 0:
+            var = None
         data[i].append(var)
 
 df_chargetime_max = pd.DataFrame(data, columns=['uid', 'chargetime_max_wk_1', 'chargetime_max_wk_2', 'chargetime_max_wk_3',
