@@ -50,3 +50,8 @@ DATA_DICTIONARY.html
 
 # ignore jupyter notebook temp files
 *checkpoint.ipynb
+/.idea/Major Project.iml
+/.idea/misc.xml
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/modules.xml
+/.idea/vcs.xml
