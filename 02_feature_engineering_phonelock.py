@@ -12,6 +12,7 @@ def import_user_data(file):
         df = pd.read_csv(file)
     return df
 
+
 df_list = []
 username_list = []
 input = 'StudentLife_Dataset/Inputs/sensing/phonelock/'
@@ -22,8 +23,8 @@ for root, dirs, files in os.walk(input):
 
 
 def week_def():
-    data_start = datetime.datetime.strptime("2013-03-25", "%Y-%m-%d")
-    data_start = pytz.timezone("Etc/GMT+5").localize(data_start)
+    data_start = datetime.datetime.strptime("2013-03-18", "%Y-%m-%d")
+    data_start = pytz.timezone("US/Eastern").localize(data_start)
     week_start = []
     for i in range(0,10):
         diff = datetime.timedelta(days=(7*i))
@@ -38,9 +39,9 @@ def parse_start_duration(df):
     start_datetime = []
     end_datetime = []
     for index, row in df.iterrows():
-        start = datetime.datetime.fromtimestamp(row['start'], tz=pytz.timezone("Etc/GMT+5"))
+        start = datetime.datetime.fromtimestamp(row['start'], tz=pytz.timezone("US/Eastern"))
         start_datetime.append(start)
-        end = datetime.datetime.fromtimestamp(row['end'], tz=pytz.timezone("Etc/GMT+5"))
+        end = datetime.datetime.fromtimestamp(row['end'], tz=pytz.timezone("US/Eastern"))
         end_datetime.append(end)
         duration_column.append(row['end'] - row['start'])
     df['duration'] = duration_column
@@ -61,7 +62,7 @@ for i, user in enumerate(df_list):
         for index, row in user.iterrows():
             if j < 9 and row['start_datetime'] > week_list[j] and row['start_datetime'] < week_list[j+1]:
                 var.append(row['duration'])
-            elif row['start_datetime'] > week_list[j]:
+            elif j == 9 and row['start_datetime'] > week_list[j]:
                 var.append(row['duration'])
         try:
             var = sum(var) / len(var)
@@ -85,7 +86,7 @@ for i, user in enumerate(df_list):
         for index, row in user.iterrows():
             if j < 9 and row['start_datetime'] > week_list[j] and row['start_datetime'] < week_list[j+1]:
                 var += 1
-            elif row['start_datetime'] > week_list[j]:
+            elif j == 9 and row['start_datetime'] > week_list[j]:
                 var += 1
         data[i].append(var)
 
@@ -105,7 +106,7 @@ for i, user in enumerate(df_list):
         for index, row in user.iterrows():
             if j < 9 and row['start_datetime'] > week_list[j] and row['start_datetime'] < week_list[j+1]:
                 var.append(row['duration'])
-            elif row['start_datetime'] > week_list[j]:
+            elif j == 9 and row['start_datetime'] > week_list[j]:
                 var.append(row['duration'])
         try:
             data[i].append(np.percentile(var, 50))
@@ -128,7 +129,7 @@ for i, user in enumerate(df_list):
         for index, row in user.iterrows():
             if j < 9 and row['start_datetime'] > week_list[j] and row['start_datetime'] < week_list[j+1]:
                 var.append(row['duration'])
-            elif row['start_datetime'] > week_list[j]:
+            elif j == 9 and row['start_datetime'] > week_list[j]:
                 var.append(row['duration'])
         try:
             data[i].append(np.percentile(var, 25))
@@ -151,7 +152,7 @@ for i, user in enumerate(df_list):
         for index, row in user.iterrows():
             if j < 9 and row['start_datetime'] > week_list[j] and row['start_datetime'] < week_list[j+1]:
                 var.append(row['duration'])
-            elif row['start_datetime'] > week_list[j]:
+            elif j == 9 and row['start_datetime'] > week_list[j]:
                 var.append(row['duration'])
         try:
             data[i].append(np.percentile(var, 75))
@@ -175,7 +176,7 @@ for i, user in enumerate(df_list):
             if j < 9 and row['start_datetime'] > week_list[j] and row['start_datetime'] < week_list[j+1]:
                 if row['duration'] < var:
                     var = row['duration']
-            elif row['start_datetime'] > week_list[j]:
+            elif j == 9 and row['start_datetime'] > week_list[j]:
                 if row['duration'] < var:
                     var = row['duration']
         if var == 86400:
@@ -199,7 +200,7 @@ for i, user in enumerate(df_list):
             if j < 9 and row['start_datetime'] > week_list[j] and row['start_datetime'] < week_list[j+1]:
                 if row['duration'] > var:
                     var = row['duration']
-            elif row['start_datetime'] > week_list[j]:
+            elif j == 9 and row['start_datetime'] > week_list[j]:
                 if row['duration'] > var:
                     var = row['duration']
         if var == 0:
