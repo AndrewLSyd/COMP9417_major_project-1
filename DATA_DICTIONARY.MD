@@ -30,3 +30,14 @@ Speed of movement in a week may be indicative of levels of exercise/psychologica
 * chargetime_median - median time phone has been charging each week
 * chargetime_q1 - first quartile phone charge time each week
 * chargetime_q3 - third quartile phone charge time each week
+
+### Bluetooth
+* bluetooth_avg - average number of unique bluetooth devices (daily) each week
+
+### Activity
+* activity_stationary_ratio - proportion of the user's stationary time in each week
+* activity_running_ratio - proportion of the user's running time in each week
+
+### Conversation
+* conversation_hours - total hours of conversation that the user participate in each week
+* conversation_freq - total number of conversation that the user participate in each week
