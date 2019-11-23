@@ -8,6 +8,9 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics.scorer import make_scorer
+from matplotlib.ticker import FormatStrFormatter
+
+from matplotlib.ticker import FormatStrFormatter
 
 def quantile_plot(y_actual, y_pred, quantiles=10, scale=1.0, title=None):
     """ 
@@ -27,17 +30,22 @@ def quantile_plot(y_actual, y_pred, quantiles=10, scale=1.0, title=None):
     df = pd.DataFrame({'Actual':np.array(y_actual).reshape(-1),
                                   'Predicted':np.array(y_pred).reshape(-1) * scale_used})
     df = df.groupby(pd.qcut(df.rank(method="first").loc[:, "Predicted"], quantiles)).mean()
-    df.loc[:, "quantile"] = (list(range(1, quantiles + 1)))
-    df = df.set_index("quantile")
+    df.loc[:, "Quantile"] = (list(range(1, quantiles + 1)))
+    df = df.set_index("Quantile")
 
     df.plot()
-    plt.xticks(rotation=90)
+    plt.gca().xaxis.set_major_formatter(FormatStrFormatter('%d'))
+    plt.gca().set_ylabel("Target")
+    # plt.xticks(rotation=90)
+    plt.gca().xaxis.set_major_locator(plt.MaxNLocator(quantiles))
+    
     if title:
         plt.title(title)    
     else:
         plt.title("Predicted vs. Observed (" + str(quantiles) + " quantiles)")
 
     return df
+
 
 def gini_score(y_true, y_pre, **kwargs):
     """
