@@ -188,8 +188,20 @@ flourishing_scale_matrix <-
          people_respect_me) %>%
   as.matrix()
 
-flourishing_scale_imputated <-
-  bnstruct::knn.impute(flourishing_scale_matrix, k = 5, cat.var = numeric(0)) %>%
+# hard coded based on previous outcome of train/test split
+test_uids <- c("u03", "u05", "u07", "u27", "u43", "u44", "u45",  "u52", "u56")
+
+test_rows <-
+  output_data[["flourishing_scale"]] %>%
+  pull("uid") %in%
+  test_uids
+
+flourishing_scale_imputated <- numeric(nrow(flourishing_scale_matrix))
+flourishing_scale_imputated[test_rows] <-
+  bnstruct::knn.impute(flourishing_scale_matrix[test_rows, ], k = 5, cat.var = numeric(0)) %>%
+  rowSums()
+flourishing_scale_imputated[!test_rows] <-
+  bnstruct::knn.impute(flourishing_scale_matrix[!test_rows, ], k = 5, cat.var = numeric(0)) %>%
   rowSums()
 
 output_data[["flourishing_scale"]] <-
@@ -263,8 +275,14 @@ panas_scale_matrix <-
   mutate_if(is.integer, as.double) %>%
   as.matrix()
 
-panas_scale_imputated <-
-  bnstruct::knn.impute(panas_scale_matrix, k = 5, cat.var = numeric(0)) %>%
+
+panas_scale_imputated <- matrix(nrow = nrow(panas_scale_matrix), ncol = 2)
+test_rows <-  output_data[["panas"]] %>%
+  pull("uid") %in%
+  test_uids
+
+panas_scale_imputated[test_rows, ] <-
+  bnstruct::knn.impute(panas_scale_matrix[test_rows, ], k = 5, cat.var = numeric(0)) %>%
   as_tibble() %>%
   rowwise() %>%
   mutate(panas_pos_imp = sum(interested, strong, enthusiastic, proud, alert,
@@ -272,7 +290,25 @@ panas_scale_imputated <-
          panas_neg_imp = sum(distressed, upset, guilty, scared, hostile,
                              irritable, nervous, jittery, afraid)) %>%
   ungroup() %>%
-  select(panas_pos_imp, panas_neg_imp)
+  select(panas_pos_imp, panas_neg_imp) %>%
+  as.matrix() %>%
+  unname()
+
+panas_scale_imputated[!test_rows, ] <-
+  bnstruct::knn.impute(panas_scale_matrix[!test_rows, ], k = 5, cat.var = numeric(0)) %>%
+  as_tibble() %>%
+  rowwise() %>%
+  mutate(panas_pos_imp = sum(interested, strong, enthusiastic, proud, alert,
+                             inspired, determined, attentive, active),
+         panas_neg_imp = sum(distressed, upset, guilty, scared, hostile,
+                             irritable, nervous, jittery, afraid)) %>%
+  ungroup() %>%
+  select(panas_pos_imp, panas_neg_imp) %>%
+  as.matrix() %>%
+  unname()
+# convert matrix to named tibble
+colnames(panas_scale_imputated) <- c("panas_pos_imp", "panas_neg_imp")
+panas_scale_imputated <- as_tibble(panas_scale_imputated)
 
 output_data[["panas"]] <-
   output_data[["panas"]] %>%
