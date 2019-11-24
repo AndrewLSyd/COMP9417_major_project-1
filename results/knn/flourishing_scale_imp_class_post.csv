@@ -1,0 +1,11 @@
+,rank_test_score,mean_test_score,std_test_score,param_pca__n_components,param_imputer__strategy,param_df_selector__attribute_names,param_knn__n_neighbors,param_knn__weights,param_knn__metric
+6,1,-0.6731365036415611,0.02684714031917576,0.95,most_frequent,all,24,uniform,manhattan
+7,2,-0.6785891221023689,0.06678260652515097,0.6,most_frequent,all,20,uniform,manhattan
+8,3,-0.679971933076526,0.1197699681322505,0.6,median,wk_9_10,14,uniform,euclidean
+0,4,-0.6922298405735632,0.0634210622776308,0.9,median,all,16,distance,manhattan
+4,5,-0.6966935912676694,0.08565240917072275,0.8,median,wk_9_10,21,distance,euclidean
+3,6,-0.700806326243292,0.20923192161196627,0.85,median,wk_9_10,12,uniform,manhattan
+9,7,-0.7040890408203524,0.058880285377431535,0.7,median,all,17,uniform,euclidean
+1,8,-0.7974317465174459,0.19595290506190624,0.8,median,all,6,distance,euclidean
+5,9,-2.4125247520027657,5.014718767810768,0.9,median,all,6,distance,manhattan
+2,10,-10.552328352870209,9.185463610915379,0.6,mean,wk_9_10,2,uniform,manhattan
