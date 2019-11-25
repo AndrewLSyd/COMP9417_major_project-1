@@ -9,20 +9,24 @@ def convert_date_to_week(date_to_convert):
     elasped_days = date_to_convert - start_date
     return int(elasped_days.days / 7) + 1
 
-
+# initialise variables
 weekly_silent_ratio = {}
 weekly_noisy_ratio = {}
 tz = timezone('Etc/GMT+5')
 start_date = tz.localize(datetime(2013, 3, 25)).date()
 path = 'C:/Users/brs97/PycharmProjects/comp9417/StudentLife_Dataset/Inputs/sensing/audio'  # use your path
+
 all_files = glob.glob(path + "/*.csv")
 for file in all_files:
+    # get student activity
     uid = file.split("_")[-1].rstrip(".csv")
     weekly_silent_ratio[uid] = {}
     weekly_noisy_ratio[uid] = {}
     df = pd.read_csv(file)
     audios = np.array(df)
     weekly_total_detections = {}
+    
+    # split audio into noisy and silent periods
     for audio in audios:
         date = datetime.fromtimestamp(audio[0]).date()
         week = convert_date_to_week(date)
@@ -36,12 +40,15 @@ for file in all_files:
             weekly_silent_ratio[uid][week] += 1
         elif audio_level == 2:
             weekly_noisy_ratio[uid][week] += 1
+    # summarise at weekly level
     for week in weekly_total_detections:
         if week in weekly_silent_ratio[uid]:
             weekly_silent_ratio[uid][week] /= weekly_total_detections[week]
         if week in weekly_noisy_ratio[uid]:
             weekly_noisy_ratio[uid][week] /= weekly_total_detections[week]
 
+
+# write to csv
 feature1_df = pd.DataFrame.from_dict(weekly_silent_ratio, orient='index')
 feature1_df = feature1_df.reindex(sorted(feature1_df.columns), axis=1)
 column1_names = ["audio_silent_ratio_wk_" + str(wk) for wk in range(1, 11)]
