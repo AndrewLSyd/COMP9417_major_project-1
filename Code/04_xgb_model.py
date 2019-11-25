@@ -12,6 +12,7 @@ import helper_functions as helper
 
 # Global variables needed
 OUTPATH_RESULTS = "results/xgb/"
+OUTPATH_MODELS = "fitted_models/xgb"
 CV_FOLDS = 10
 N_JOBS = 4
 N_ITER = 80
@@ -20,14 +21,19 @@ COLS_KEEP = ["rank_test_score", "mean_test_score", "std_test_score",
              "param_learning_rate", "param_gamma", "param_max_depth", "param_colsample_bytree", "param_subsample",
              "param_min_child_weight", "param_n_estimators", "param_reg_alpha", "param_reg_lambda"]
 
+# Create directory for storing the results later
+if not os.path.isdir(OUTPATH_MODELS):
+    os.mkdir(OUTPATH_MODELS)
+if not os.path.isdir(OUTPATH_RESULTS):
+    os.mkdir(OUTPATH_RESULTS)
+
 """
-If you have pre-trained the model, skip to the code section that retrieves the best model.
+If you have pre-trained the model, can skip to line 166 to retrieve the best model.
 """
 X_train = pd.read_csv("train_test_data/X_train.csv", index_col="uid").drop("Unnamed: 0", axis="columns")
 X_test = pd.read_csv("train_test_data/X_test.csv", index_col="uid").drop("Unnamed: 0", axis="columns")
 y_test = pd.read_csv("train_test_data/y_test.csv", index_col="uid").drop("Unnamed: 0", axis="columns")
 y_train = pd.read_csv("train_test_data/y_train.csv", index_col="uid").drop("Unnamed: 0", axis="columns")
-
 
 """
 Retrieve our desired training data and test data
@@ -56,10 +62,9 @@ for name in class_names:
     test_data[target_type][name]["x"] = X_test[filtered_columns]
     test_data[target_type][name]["y"] = y_test.loc[:, name]
 
-
 # Classifier parameter grid
-class_parameters = {"learning_rate": [0.001, 0.01, 0.1], 
-                    "gamma" : [0, 0.01, 0.05, 0.1],
+class_parameters = {"learning_rate": [0.001, 0.01, 0.1],
+                    "gamma": [0, 0.01, 0.05, 0.1],
                     "max_depth": [1, 3, 5, 7],
                     "colsample_bytree": [0.3, 0.5, 0.7, 1.0],
                     "subsample": [0.3, 0.5, 0.7, 1.0],
@@ -92,8 +97,8 @@ def report(results, n_top=3):
         for candidate in candidates:
             print("Model with rank: {0}".format(i))
             print("Mean validation score: {0:.3f} (std: {1:.3f})".format(
-                  results['mean_test_score'][candidate],
-                  results['std_test_score'][candidate]))
+                results['mean_test_score'][candidate],
+                results['std_test_score'][candidate]))
             print("Parameters: {0}".format(results['params'][candidate]))
             print("")
 
@@ -108,7 +113,7 @@ for name in train_data["class"]:
     print("Prediction of " + name)
     best_model = find_best_model(rscv_classifier, train_data["class"][name]["x"], train_data["class"][name]["y"])
     # Save the best model in pickle
-    joblib.dump(best_model, 'xgb_model_' + name)
+    joblib.dump(best_model, OUTPATH_MODELS + 'xgb_model_' + name)
     report(best_model.cv_results_)
     print("Performance on training set:")
     report_classifier_performance(best_model, train_data["class"][name]["x"], train_data["class"][name]["y"])
@@ -127,31 +132,30 @@ def report_regression_performance(model, x, y):
     return df
 
 
-# Classifier parameter grid
-regr_parameters = {"learning_rate": [0.001, 0.01, 0.1], 
-                    "gamma" : [0, 0.01, 0.05, 0.1],
-                    "max_depth": [1, 3, 5, 7],
-                    "colsample_bytree": [0.3, 0.5, 0.7, 1.0],
-                    "subsample": [0.3, 0.5, 0.7, 1.0],
-                    "min_child_weight": [1, 2, 3],
-                    "n_estimators": [100, 300, 500, 1000, 1500],
-                    'reg_alpha': [1e-5, 1e-2,  0.75],
-                    'reg_lambda': [1e-5, 1e-2, 0.45],
+# Regressor parameter grid
+regr_parameters = {"learning_rate": [0.001, 0.01, 0.1],
+                   "gamma": [0, 0.01, 0.05, 0.1],
+                   "max_depth": [1, 3, 5, 7],
+                   "colsample_bytree": [0.3, 0.5, 0.7, 1.0],
+                   "subsample": [0.3, 0.5, 0.7, 1.0],
+                   "min_child_weight": [1, 2, 3],
+                   "n_estimators": [100, 300, 500, 1000, 1500],
+                   'reg_alpha': [1e-5, 1e-2, 0.75],
+                   'reg_lambda': [1e-5, 1e-2, 0.45],
                    }
-
 
 # Baseline regressor
 baseline_regressor = XGBRegressor(objective="reg:squarederror")
-xgb_rscv_regressor = RandomizedSearchCV(baseline_regressor, param_distributions=regr_parameters, 
+xgb_rscv_regressor = RandomizedSearchCV(baseline_regressor, param_distributions=regr_parameters,
                                         scoring="neg_mean_squared_error", iid=False, random_state=12,
                                         cv=CV_FOLDS, verbose=False, n_jobs=N_JOBS, n_iter=N_ITER)
 
-# Find the optimal classifier and its performance on training and test set respectively
+# Find the optimal regressor and its performance on training and test set respectively
 for name in train_data["regr"]:
     print("Prediction of " + name)
     best_model = find_best_model(xgb_rscv_regressor, train_data["regr"][name]["x"], train_data["regr"][name]["y"])
     # Save the best model in pickle
-    joblib.dump(best_model, 'xgb_model_' + name)
+    joblib.dump(best_model, OUTPATH_MODELS + 'xgb_model_' + name)
     report(best_model.cv_results_)
     print("Performance on training set:")
     report_regression_performance(best_model, train_data["regr"][name]["x"], train_data["regr"][name]["y"])
@@ -159,20 +163,19 @@ for name in train_data["regr"]:
     report_regression_performance(best_model, test_data["regr"][name]["x"], test_data["regr"][name]["y"])
     print("-------------------------------------------------------------------------------------------------\n")
 
-
 # Retrieve best models
-flourishing_scale_imp_class_post = joblib.load('xgb_model_flourishing_scale_imp_class_post')
-flourishing_scale_raw_class_post = joblib.load('xgb_model_flourishing_scale_raw_class_post')
-flourishing_scale_imp_post = joblib.load('xgb_model_flourishing_scale_imp_post')
-flourishing_scale_raw_post = joblib.load('xgb_model_flourishing_scale_raw_post')
-panas_neg_imp_post = joblib.load('xgb_model_panas_neg_imp_post')
-panas_neg_raw_post = joblib.load('xgb_model_panas_neg_raw_post')
-panas_pos_imp_post = joblib.load('xgb_model_panas_pos_imp_post')
-panas_pos_raw_post = joblib.load('xgb_model_panas_pos_raw_post')
-panas_neg_imp_class_post = joblib.load('xgb_model_panas_neg_imp_class_post')
-panas_neg_raw_class_post = joblib.load('xgb_model_panas_neg_raw_class_post')
-panas_pos_imp_class_post = joblib.load('xgb_model_panas_pos_imp_class_post')
-panas_pos_raw_class_post = joblib.load('xgb_model_panas_pos_raw_class_post')
+flourishing_scale_imp_class_post = joblib.load(OUTPATH_MODELS + 'xgb_model_flourishing_scale_imp_class_post')
+flourishing_scale_raw_class_post = joblib.load(OUTPATH_MODELS + 'xgb_model_flourishing_scale_raw_class_post')
+flourishing_scale_imp_post = joblib.load(OUTPATH_MODELS + 'xgb_model_flourishing_scale_imp_post')
+flourishing_scale_raw_post = joblib.load(OUTPATH_MODELS + 'xgb_model_flourishing_scale_raw_post')
+panas_neg_imp_post = joblib.load(OUTPATH_MODELS + 'xgb_model_panas_neg_imp_post')
+panas_neg_raw_post = joblib.load(OUTPATH_MODELS + 'xgb_model_panas_neg_raw_post')
+panas_pos_imp_post = joblib.load(OUTPATH_MODELS + 'xgb_model_panas_pos_imp_post')
+panas_pos_raw_post = joblib.load(OUTPATH_MODELS + 'xgb_model_panas_pos_raw_post')
+panas_neg_imp_class_post = joblib.load(OUTPATH_MODELS + 'xgb_model_panas_neg_imp_class_post')
+panas_neg_raw_class_post = joblib.load(OUTPATH_MODELS + 'xgb_model_panas_neg_raw_class_post')
+panas_pos_imp_class_post = joblib.load(OUTPATH_MODELS + 'xgb_model_panas_pos_imp_class_post')
+panas_pos_raw_class_post = joblib.load(OUTPATH_MODELS + 'xgb_model_panas_pos_raw_class_post')
 
 
 # Used to retrieve the grid search results
@@ -189,17 +192,15 @@ def combine_imp_raw_results(raw_cv_results, imp_cv_results, fpath_out):
 
     df = pd.concat([df_raw, df_imp]).sort_values("mean_test_score", ascending=False)
     df.rank_test_score = list(range(1, df.shape[0] + 1))
-    df.columns = ["Rank", "CV score (mean)", "CV score (standard deviation)", 
-                  "Target imputation", "Learning rate", "Gamma", 
-                  "Max depth", "Max features in each tree (split)", "Subsample", 
+    df.columns = ["Rank", "CV score (mean)", "CV score (standard deviation)",
+                  "Target imputation", "Learning rate", "Gamma",
+                  "Max depth", "Max features in each tree (split)", "Subsample",
                   "Min child weight", "Number of estimators (boost rounds)", "Alpha", "Lambda"]
     df["CV score (mean)"] = -df["CV score (mean)"]
     df.to_csv(fpath_out)
     return df
 
 
-if not os.path.isdir(OUTPATH_RESULTS):
-    os.mkdir(OUTPATH_RESULTS)
 combine_imp_raw_results(flourishing_scale_raw_class_post.cv_results_,
                         flourishing_scale_imp_class_post.cv_results_,
                         OUTPATH_RESULTS + "flourishing_scale_class_post" + ".csv")
@@ -221,40 +222,47 @@ combine_imp_raw_results(panas_neg_raw_post.cv_results_,
                         OUTPATH_RESULTS + "panas_neg_post" + ".csv")
 
 
-# functions to output results
-def output_results_df(cv_results, cols_keep, target):    
-    pd.DataFrame(cv_results).sort_values("rank_test_score", ascending=True)[cols_keep].to_csv(OUTPATH_RESULTS + target + ".csv")
+# Output cross validation results
+def output_results_df(cv_results, cols_keep, target):
+    pd.DataFrame(cv_results).sort_values("rank_test_score", ascending=True)[cols_keep].to_csv(
+        OUTPATH_RESULTS + target + ".csv")
 
 
-def output_results_diagnostics(estimator, target, X_train, y_train, X_test, y_test, quantiles=5, classifier=False, metric_name="Score"):
+# Produce and save lorenz graphs and quantile plots
+def output_results_diagnostics(estimator, target, X_train, y_train, X_test, y_test, quantiles=5, classifier=False,
+                               metric_name="Score"):
     y_train_pred = estimator.predict(X_train)
     y_test_pred = estimator.predict(X_test)
+    # Produce lorenz graphs differently for classifier and regressor
     if classifier:
-        y_train_pred_proba = estimator.predict_proba(X_train)[:,1]
-        y_test_pred_proba = estimator.predict_proba(X_test)[:,1]  
+        y_train_pred_proba = estimator.predict_proba(X_train)[:, 1]
+        y_test_pred_proba = estimator.predict_proba(X_test)[:, 1]
         score_train = metrics.log_loss(y_train, y_train_pred_proba)
         score_test = metrics.log_loss(y_test, y_test_pred_proba)
         metric_name = "Log Loss"
         helper.lorenz_curve(y_train, y_train_pred_proba)
         plt.savefig(OUTPATH_RESULTS + target + "_lorenz_train.png")
-        helper.lorenz_curve(y_test, y_test_pred_proba)   
+        helper.lorenz_curve(y_test, y_test_pred_proba)
         plt.savefig(OUTPATH_RESULTS + target + "_lorenz_test.png")
     else:
         score_train = metrics.mean_squared_error(y_train, y_train_pred)
-        score_test = metrics.mean_squared_error(y_test, y_test_pred)      
+        score_test = metrics.mean_squared_error(y_test, y_test_pred)
         metric_name = "MSE"
         helper.lorenz_curve(y_train, y_train_pred)
         plt.savefig(OUTPATH_RESULTS + target + "_lorenz_train.png")
-        helper.lorenz_curve(y_test, y_test_pred)   
+        helper.lorenz_curve(y_test, y_test_pred)
         plt.savefig(OUTPATH_RESULTS + target + "_lorenz_test.png")
 
-    helper.quantile_plot(y_train, y_train_pred, quantiles=quantiles, title=metric_name + " train: {:.4f}".format(score_train))
+    helper.quantile_plot(y_train, y_train_pred, quantiles=quantiles,
+                         title=metric_name + " train: {:.4f}".format(score_train))
     plt.savefig(OUTPATH_RESULTS + target + "_pvo_train.png")
 
-    helper.quantile_plot(y_test, y_test_pred, quantiles=quantiles, title=metric_name + " test: {:.4f}".format(score_test))
+    helper.quantile_plot(y_test, y_test_pred, quantiles=quantiles,
+                         title=metric_name + " test: {:.4f}".format(score_test))
     plt.savefig(OUTPATH_RESULTS + target + "_pvo_test.png")
-        
 
+
+# Produce shap feature importance graph
 def output_results_shap(estimator, target, X, corr_thresh=0.3):
     shap_values = shap.TreeExplainer(estimator).shap_values(X)
     shap.summary_plot(shap_values, X, plot_type="bar", show=False, max_display=10, color="orange")
@@ -263,50 +271,52 @@ def output_results_shap(estimator, target, X, corr_thresh=0.3):
     plt.savefig(OUTPATH_RESULTS + target + "_shap.png", bbox_inches='tight')
 
 
-def output_results(estimator, cv_results, target, X_train, y_train, X_test, y_test, cols_keep, quantiles, classifier=False,
-                  metric_name="Score"):
+# Call all result generation functions and plot all results
+def output_results(estimator, cv_results, target, X_train, y_train, X_test, y_test, cols_keep, quantiles,
+                   classifier=False,
+                   metric_name="Score"):
     plt.clf()
     output_results_df(cv_results, cols_keep, target)
     plt.clf()
-    output_results_diagnostics(estimator, target, X_train, y_train, X_test, y_test, classifier=classifier, quantiles=quantiles, metric_name=metric_name)
+    output_results_diagnostics(estimator, target, X_train, y_train, X_test, y_test, classifier=classifier,
+                               quantiles=quantiles, metric_name=metric_name)
     plt.clf()
     output_results_shap(estimator.best_estimator_, target, X_train)
     plt.clf()
 
 
-output_results(flourishing_scale_raw_class_post, flourishing_scale_raw_class_post.cv_results_, 
+output_results(flourishing_scale_raw_class_post, flourishing_scale_raw_class_post.cv_results_,
                "flourishing_scale_raw_class_post", train_data["class"]["flourishing_scale_raw_class_post"]["x"],
                train_data["class"]["flourishing_scale_raw_class_post"]["y"],
                test_data["class"]["flourishing_scale_raw_class_post"]["x"],
                test_data["class"]["flourishing_scale_raw_class_post"]["y"], COLS_KEEP, 5, classifier=True)
 
-output_results(flourishing_scale_raw_post, flourishing_scale_raw_post.cv_results_, 
+output_results(flourishing_scale_raw_post, flourishing_scale_raw_post.cv_results_,
                "flourishing_scale_raw_post", train_data["regr"]["flourishing_scale_raw_post"]["x"],
                train_data["regr"]["flourishing_scale_raw_post"]["y"],
                test_data["regr"]["flourishing_scale_raw_post"]["x"],
                test_data["regr"]["flourishing_scale_raw_post"]["y"], COLS_KEEP, 5, classifier=False)
 
-output_results(panas_pos_raw_class_post, panas_pos_raw_class_post.cv_results_, 
+output_results(panas_pos_raw_class_post, panas_pos_raw_class_post.cv_results_,
                "panas_pos_raw_class_post", train_data["class"]["panas_pos_raw_class_post"]["x"],
                train_data["class"]["panas_pos_raw_class_post"]["y"],
                test_data["class"]["panas_pos_raw_class_post"]["x"],
                test_data["class"]["panas_pos_raw_class_post"]["y"], COLS_KEEP, 5, classifier=True)
 
-output_results(panas_pos_raw_post, panas_pos_raw_post.cv_results_, 
+output_results(panas_pos_raw_post, panas_pos_raw_post.cv_results_,
                "panas_pos_raw_post", train_data["regr"]["panas_pos_raw_post"]["x"],
                train_data["regr"]["panas_pos_raw_post"]["y"],
                test_data["regr"]["panas_pos_raw_post"]["x"],
                test_data["regr"]["panas_pos_raw_post"]["y"], COLS_KEEP, 5, classifier=False)
 
-output_results(panas_neg_raw_class_post, panas_neg_raw_class_post.cv_results_, 
+output_results(panas_neg_raw_class_post, panas_neg_raw_class_post.cv_results_,
                "panas_neg_raw_class_post", train_data["class"]["panas_neg_raw_class_post"]["x"],
                train_data["class"]["panas_neg_raw_class_post"]["y"],
                test_data["class"]["panas_neg_raw_class_post"]["x"],
                test_data["class"]["panas_neg_raw_class_post"]["y"], COLS_KEEP, 5, classifier=True)
 
-output_results(panas_neg_raw_post, panas_neg_raw_post.cv_results_, 
+output_results(panas_neg_raw_post, panas_neg_raw_post.cv_results_,
                "panas_neg_raw_post", train_data["regr"]["panas_neg_raw_post"]["x"],
                train_data["regr"]["panas_neg_raw_post"]["y"],
                test_data["regr"]["panas_neg_raw_post"]["x"],
                test_data["regr"]["panas_neg_raw_post"]["y"], COLS_KEEP, 5, classifier=False)
-
