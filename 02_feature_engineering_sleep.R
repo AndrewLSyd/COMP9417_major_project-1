@@ -2,15 +2,9 @@ library(sqldf)
 # the irony of losing sleep to estimate how much sleep other uni students
 # got should not be lost on anyone
 
-# authors of study used a statistical model to identify sleep but don't
-# push the coefficients or thresholds
 
-# we will take a best guess
-
-# make life easy by copying relevant tibbles
-
-# sleep duration
-
+# sleep coeficients taken from Unobtrusive Sleep Monitoring using Smartphones
+# (full reference in report)
 sleep_coefs <-
   c("dark" = 0.0415,
     "lock" = 0.0512,
@@ -18,13 +12,14 @@ sleep_coefs <-
     "stationary" = 0.5445,
     "silence" = 0.3484)
 
-
+# copy relevant data frames
 dark <- input_data$dark
 phonelock <- input_data$phonelock
 phonecharge <- input_data$phonecharge
 activity <- input_data$activity
 audio <- input_data$audio
 
+# format data into 30 minute windows
 activity <-
   activity %>%
   mutate(timestamp = round_date(timestamp, "30 minutes")) %>%
@@ -37,6 +32,8 @@ audio <-
   group_by(uid, timestamp) %>%
   summarise(silence = sum(audio_inference == "silence")/ n())
 
+# for cases we have  start and end date we need to convert from
+# start and end period to time spend every 30 minutes across the study
 start_min <-
   min(dark$start, phonelock$start, phonecharge$start) %>%
   floor_date("30 minutes")
@@ -46,9 +43,13 @@ end_max <-
 
 uids <- dark %>% pull(uid) %>% unique()
 # 60 seconds * 30 minutes
+
+# create sequence of every 30 minutes for duration of study
 timestamps <- seq(start_min, end_max, by = 60 * 30)
 
+# expand timestamps sequence across all students
 base_table <- crossing(uid = uids, timestamp = timestamps)
+# join activity start and end dates onto 30 minute windows
 # this is very memory intensive (takes about 16GB of ram)
 dark <-
   sqldf(
@@ -116,6 +117,7 @@ phonecharge <-
   summarise(phonecharge = max(phonecharge)) %>%
   ungroup()
 
+# combine all tables
 sleep <-
   dark %>%
   left_join(phonelock, by = c("uid", "timestamp")) %>%
@@ -125,6 +127,7 @@ sleep <-
 
 date_term_start <- ymd("20130318", tz = "US/Eastern")
 
+# summarise time spent asleep each 30 minute window
 sleep <-
   sleep %>%
   mutate(week_day = wday(timestamp, label = TRUE, abbr = FALSE)) %>%
