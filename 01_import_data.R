@@ -175,7 +175,7 @@ output_data[["flourishing_scale"]] <-
          + people_respect_me) %>%
   ungroup()
 
-# impute missing values
+# matrix to impute missing values
 flourishing_scale_matrix <-
   output_data[["flourishing_scale"]] %>%
   select(i_lead_a_purposeful_and_meaningful_life,
@@ -197,9 +197,11 @@ test_rows <-
   test_uids
 
 flourishing_scale_imputated <- numeric(nrow(flourishing_scale_matrix))
+# no imputation on test data
 flourishing_scale_imputated[test_rows] <-
-  bnstruct::knn.impute(flourishing_scale_matrix[test_rows, ], k = 5, cat.var = numeric(0)) %>%
+  flourishing_scale_matrix[test_rows, ] %>%
   rowSums()
+# impute training data
 flourishing_scale_imputated[!test_rows] <-
   bnstruct::knn.impute(flourishing_scale_matrix[!test_rows, ], k = 5, cat.var = numeric(0)) %>%
   rowSums()
@@ -282,7 +284,8 @@ test_rows <-  output_data[["panas"]] %>%
   test_uids
 
 panas_scale_imputated[test_rows, ] <-
-  bnstruct::knn.impute(panas_scale_matrix[test_rows, ], k = 5, cat.var = numeric(0)) %>%
+  # no imputation on test data
+  panas_scale_matrix[test_rows, ] %>%
   as_tibble() %>%
   rowwise() %>%
   mutate(panas_pos_imp = sum(interested, strong, enthusiastic, proud, alert,
@@ -294,6 +297,7 @@ panas_scale_imputated[test_rows, ] <-
   as.matrix() %>%
   unname()
 
+# impute train data
 panas_scale_imputated[!test_rows, ] <-
   bnstruct::knn.impute(panas_scale_matrix[!test_rows, ], k = 5, cat.var = numeric(0)) %>%
   as_tibble() %>%
