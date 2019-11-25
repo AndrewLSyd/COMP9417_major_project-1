@@ -205,7 +205,7 @@ def grid_search(estimator, target, scoring, nn=25, n_iter=1000, cv=10, n_jobs=-1
     
     # run randomised search
     random_search = RandomizedSearchCV(pipe, param_distributions=param_grid, n_iter=n_iter, cv=cv, n_jobs=n_jobs,
-                                       scoring=scoring, iid=False, random_state=SEED)
+                                       scoring=scoring, iid=False)
     random_search.fit(X_train[target_not_null], y_train[target_not_null].loc[:, target])
     
     if verbose:
