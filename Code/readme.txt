@@ -3,7 +3,7 @@ Files with smaller number (I.e. 00_main.py) will be run first.
 
 For convenience of use, 00_main.py will be in charge of running all other scripts. I.e., running the 00_main.py will preprocess the data, extract thee features, train the models and save the results automatically.
 
-Before running 00_main.py, make sure you modify the rscript_location and file_location to where your Rscript program is located and where your scripts are located.
+Before running 00_main.py, make sure you modify the rscript_location and file_location to where your Rscript program is located and where your scripts are located respectively.
 
 For example,
 rscript_location = "C:/Program Files/R/R-3.6.1/bin/Rscript.exe"
