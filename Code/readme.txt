@@ -5,8 +5,8 @@ For convenience of use, 00_main.py will be in charge of running all other script
 
 Before running 00_main.py, make sure you modify the rscript_location and file_location to where your Rscript program is located and where your scripts are located respectively.
 
-For example,
-rscript_location = "C:/Program Files/R/R-3.6.1/bin/Rscript.exe"
-file_location    = "S:/Users/Aaron Blackwell/Documents/GitHub/COMP9417_major_project/Code/"
+Make the following changes.
+rscript_location = "{YourOwnPath}/Rscript.exe"
+file_location    = "{YourOwnPathToTheScripts}"
 
 After that, you should be able to run all our scripts at once with a single click. And all temporary results will be displayed and the final results will be saved in the correct folders.
