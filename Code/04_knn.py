@@ -181,9 +181,6 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
             return np.array(X)[:,features_wk_10_ind]    
 
 
-SEED = 1467708983
-
-
 def grid_search(estimator, target, scoring, nn=25, n_iter=1000, cv=10, n_jobs=-1, n_top=1, verbose=True):
     
     print("*" * 20, target, "*" * 20)
