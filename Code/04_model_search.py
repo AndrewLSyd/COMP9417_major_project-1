@@ -1,3 +1,7 @@
+"""
+perform a model search with default ML methods on the data to get an indication as to
+which models may be worth investigating as well as provide a benchmark.
+"""
 # globals
 CV_FOLDS = 10
 N_JOBS = 1
@@ -8,15 +12,10 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import cross_val_score, cross_val_predict, GridSearchCV
 from sklearn.decomposition import PCA
-from IPython.core.interactiveshell import InteractiveShell
-InteractiveShell.ast_node_interactivity = "all"
 from sklearn.pipeline import Pipeline
 import sklearn 
-print (sklearn.__version__)
-
-import warnings
-warnings.simplefilter(action='once', category=FutureWarning)
-
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
 
 # import data
 def import_data(data):    
@@ -26,32 +25,25 @@ X_test = import_data("X_test")
 y_train = import_data("y_train")
 y_test = import_data("y_test")
 
-
+# check import
 X_train.head()
 X_test.head()
 y_train.head()
 y_test.head()
 
-
 y_train.describe()
-
 
 y_train.columns
 
 y_train.loc[:, ['flourishing_scale_imp_class_pre']].hist()
 y_train.loc[:, ['flourishing_scale_raw_post']].hist()
 
-
 y_train.loc[:, ['panas_neg_raw_pre']].hist()
 y_train.loc[:, ['panas_neg_raw_post']].hist()
-
 
 y_train.loc[:, ['panas_pos_raw_post']].hist()
 y_train.loc[:, ['panas_pos_raw_pre']].hist()
 
-
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
 imputer = SimpleImputer(strategy="most_frequent")
 scaler = StandardScaler()
 
@@ -113,17 +105,11 @@ def model_search(model_list, X, y, target, scoring, bigger_score_is_better=True,
     
     return pd.DataFrame(model_results, columns=['model_' + target, 'CV_score_' + scoring, 'std']).sort_values('CV_score_' + scoring, ascending=not bigger_score_is_better)
 
-
-df = pd.DataFrame({'text': ['foo foo foo foo foo foo foo foo', 'bar bar bar bar bar'],
-                 'number': [1, 2]})
-
-df.style.set_properties(subset=['text'], **{'width': '300px'})
-
 # classification
 model_search_flour_class_pre = model_search(models_clf, X_train, y_train, "flourishing_scale_imp_class_pre", "neg_log_loss")
 model_search_flour_class_post = model_search(models_clf, X_train, y_train, "flourishing_scale_imp_class_post", "neg_log_loss")
 
-#regression
+# regression
 model_search_flour_pre = model_search(models_reg, X_train, y_train, "flourishing_scale_imp_pre", "neg_mean_squared_error")
 model_search_flour_post = model_search(models_reg, X_train, y_train, "flourishing_scale_imp_post", "neg_mean_squared_error")
 
@@ -137,8 +123,6 @@ model_search_panas_pos_pre = model_search(models_reg, X_train, y_train, "panas_p
 model_search_panas_pos_post = model_search(models_reg, X_train, y_train, "panas_pos_imp_post", "neg_mean_squared_error")
 model_search_panas_neg_pre = model_search(models_reg, X_train, y_train, "panas_neg_imp_pre", "neg_mean_squared_error")
 model_search_panas_neg_post = model_search(models_reg, X_train, y_train, "panas_neg_imp_post", "neg_mean_squared_error")
-
-
 
 # panas regression
 model_search_panas_pos_class_pre = model_search(models_clf, X_train, y_train, "panas_pos_imp_class_pre", "neg_mean_squared_error")

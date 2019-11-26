@@ -18,16 +18,12 @@ import shap
 import pickle
 import os
 
-warnings.simplefilter(action='once', category=FutureWarning)
-os.getcwd()
-
 # globals
 CV_FOLDS = 10
 N_ITER = 10_000
 N_JOBS = 8
 # whilst the results may not converge, further iterations yield little benefit compared to testing out another hyper-parameter
 MAX_ITER = 5000
-
 
 # import data
 def import_data(data):    
@@ -39,7 +35,7 @@ X_test = import_data("X_test")
 y_train = import_data("y_train")
 y_test = import_data("y_test")
 
-
+# checking import
 X_train.head()
 X_test.head()
 y_train.head()
@@ -49,7 +45,7 @@ y_test.head()
 y_train.describe()
 y_train.columns
 
-
+# histograms of the target for EDA
 y_train.loc[:, ['flourishing_scale_imp_class_pre']].hist()
 y_train.loc[:, ['flourishing_scale_raw_post']].hist()
 
@@ -61,7 +57,7 @@ y_train.loc[:, ['panas_neg_raw_post']].hist()
 y_train.loc[:, ['panas_pos_raw_post']].hist()
 y_train.loc[:, ['panas_pos_raw_pre']].hist()
 
-
+# feature subset lists
 features_wk_10 = [
     "chargetime_count_wk_10"
     , "chargetime_max_wk_10"
@@ -171,6 +167,9 @@ features_wk_10_ind = [X_train.columns.get_loc(c) for c in features_wk_10]
 
 # from https://scikit-learn.org/stable/auto_examples/model_selection/plot_randomized_search.html
 def report(results, n_top=3):
+    """
+    print the results of the CV randomised grid search
+    """
     for i in range(1, n_top + 1):
         candidates = np.flatnonzero(results['rank_test_score'] == i)
         for candidate in candidates:
@@ -186,7 +185,7 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
     """
     Allows selection of subsets of features in a SKLearn Pipeline object.
     Adapted from "Hands-On Machine learning with Sciki-Learn and TensorFlow by Geron"
-    TransformerMixIn that allows selection of features
+    TransformerMixIn that allows selection of features.
     """
     def __init__(self, attribute_names="all"):
         self.attribute_names = attribute_names
@@ -195,6 +194,7 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
+        # allows selection of different feature subsets
         if self.attribute_names == "all":
             return X            
         if self.attribute_names == "wk_9_10":            
@@ -204,6 +204,9 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
 
 
 def grid_search(estimator, param_grid, target, scoring, n_iter=50, cv=10, n_jobs=8, n_top=3, verbose=True):
+    """
+    run a randomised grid search on a target
+    """
     print("*" * 20, target, "*" * 20)
     df_selector = DataFrameSelector()
     imputer = SimpleImputer()
@@ -212,7 +215,7 @@ def grid_search(estimator, param_grid, target, scoring, n_iter=50, cv=10, n_jobs
     pipe = Pipeline(steps=[('df_selector', df_selector), ('imputer', imputer), ('scaler', scaler),
                            ('pca', pca), ('SVM', estimator)])
 
-    # train using only labelled data
+    # train using only labelled data (toss out null values)
     target_not_null = np.logical_not(y_train.loc[:, target].isnull())
 
     # run randomized search
@@ -226,9 +229,7 @@ def grid_search(estimator, param_grid, target, scoring, n_iter=50, cv=10, n_jobs
         report(search.cv_results_, n_top=n_top) 
     return search  
 
-
-
-
+# tuning grid for random grid search
 param_grid = {
     "df_selector__attribute_names":["all", "wk_9_10", "wk_10"],
     "imputer__strategy":["most_frequent", "mean", "median"],    
@@ -239,7 +240,7 @@ param_grid = {
     "SVM__degree": [2, 3, 4, 5, 6]
 }
 
-# # flourishing - imputed
+# grid search for flourishing - imputed
 flourishing_scale_imp_class_post = grid_search(SVC(max_iter=MAX_ITER, probability=True), param_grid,
                                      "flourishing_scale_imp_class_post", "neg_log_loss", n_jobs=N_JOBS, n_iter=N_ITER)
 flourishing_scale_imp_post = grid_search(SVR(max_iter=MAX_ITER), param_grid,
@@ -248,7 +249,7 @@ pickle.dump(flourishing_scale_imp_class_post, open('results/SVM/flourishing_scal
 pickle.dump(flourishing_scale_imp_post, open('results/SVM/flourishing_scale_imp_post.sklearnmodel', 'wb'))
 
 
-# # flourishing - raw
+# grid search for flourishing - raw
 flourishing_scale_raw_class_post = grid_search(SVC(max_iter=MAX_ITER, probability=True), param_grid,
                                      "flourishing_scale_raw_class_post", "neg_log_loss", n_jobs=N_JOBS, n_iter=N_ITER)
 flourishing_scale_raw_post = grid_search(SVR(max_iter=MAX_ITER), param_grid,
@@ -257,7 +258,7 @@ pickle.dump(flourishing_scale_raw_class_post, open('results/SVM/flourishing_scal
 pickle.dump(flourishing_scale_raw_post, open('results/SVM/flourishing_scale_raw_post.sklearnmodel', 'wb'))
 
 
-# # panas - imp
+# grid search for panas - imp
 panas_pos_imp_class_post = grid_search(SVC(max_iter=MAX_ITER, probability=True), param_grid,
                                      "panas_pos_imp_class_post", "neg_log_loss", n_jobs=N_JOBS, n_iter=N_ITER)
 panas_pos_imp_post = grid_search(SVR(max_iter=MAX_ITER), param_grid,
@@ -272,7 +273,7 @@ pickle.dump(panas_neg_imp_class_post, open('results/SVM/panas_neg_imp_class_post
 pickle.dump(panas_neg_imp_post, open('results/SVM/panas_neg_imp_post.sklearnmodel', 'wb'))
 
 
-# # panas
+# grid search for panas
 panas_pos_raw_class_post = grid_search(SVC(max_iter=MAX_ITER, probability=True), param_grid,
                                      "panas_pos_raw_class_post", "neg_log_loss", n_jobs=N_JOBS, n_iter=N_ITER)
 panas_pos_raw_post = grid_search(SVR(max_iter=MAX_ITER), param_grid,
@@ -306,11 +307,18 @@ panas_neg_raw_post = pickle.load(open('results/SVM/panas_neg_raw_post.sklearnmod
 
 
 # functions to output results
-def output_results_df(cv_results, cols_keep, target):    
+def output_results_df(cv_results, cols_keep, target):
+    """
+    takes in the cv results from a grid search cv object, creates and outputs a dataframe
+    """
     pd.DataFrame(cv_results).sort_values("rank_test_score", ascending=True)[cols_keep].to_csv(OUTPATH_RESULTS + target + ".csv")
 
 
 def output_results_diagnostics(estimator, target, X_train, y_train, X_test, y_test, quantiles=5, classifier=False, metric_name="Score"):
+    """
+    run the PvO and Lorenz curve diagnostics for an estimator
+    """
+    # only use non-null target values
     target_train_not_null = np.logical_not(y_train.loc[:, target].isnull())
     y_train_actual = y_train[target_train_not_null].loc[:, target]
     y_train_pred = estimator.predict(X_train[target_train_not_null])
@@ -320,6 +328,7 @@ def output_results_diagnostics(estimator, target, X_train, y_train, X_test, y_te
     y_test_pred = estimator.predict(X_test[target_test_not_null])
     
     if classifier:
+        # classifier uses predicted probability
         y_train_pred_proba = estimator.predict_proba(X_train[target_train_not_null])[:,1]
         y_test_pred_proba = estimator.predict_proba(X_test[target_test_not_null])[:,1]  
         score_train = log_loss(y_train_actual, y_train_pred_proba)
@@ -329,7 +338,7 @@ def output_results_diagnostics(estimator, target, X_train, y_train, X_test, y_te
         score_train = mean_squared_error(y_train_actual, y_train_pred)
         score_test = mean_squared_error(y_test_actual, y_test_pred)      
         metric_name = "MSE"
-
+    # PvO by quantile plot
     helper.quantile_plot(y_train_actual, y_train_pred, quantiles=quantiles, title=metric_name + " train: {:.4f}".format(score_train))
     plt.savefig(OUTPATH_RESULTS + target + "_pvo_train.png")
 
@@ -349,6 +358,9 @@ def output_results_diagnostics(estimator, target, X_train, y_train, X_test, y_te
 
 
 def output_results_shap(estimator, target, X, corr_thresh=0.3):
+    """
+    Produce SHAP diagnostics for an estimator
+    """
     shap_values = shap.KernelExplainer(estimator.predict, X).shap_values(X)
     shap.summary_plot(shap_values, X_train, plot_type="bar", show=False, max_display=10, color="orange")
     plt.savefig(OUTPATH_RESULTS + target + "_shap_bar.png", bbox_inches='tight')
@@ -358,6 +370,9 @@ def output_results_shap(estimator, target, X, corr_thresh=0.3):
 
 def output_results(estimator, cv_results, target, X_train, y_train, X_test, y_test, cols_keep, quantiles, classifier=False,
                   metric_name="Score"):
+    """
+    run all diagnostics and results outputting functions
+    """
     plt.clf()
     output_results_df(cv_results, cols_keep, target)
     plt.clf()
