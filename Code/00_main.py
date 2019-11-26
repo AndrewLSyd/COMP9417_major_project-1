@@ -20,6 +20,7 @@ subprocess.call([rscript_location, file_location + "02_feature_engineering_sleep
 subprocess.call(["python", file_location + "03_comb_features_train_test_split.py"])
 
 # fit various models and save results
+subprocess.call(["python", file_location + "04_model_search.py"])
 subprocess.call(["python", file_location + "04_baseline_model.py"])
 subprocess.call(["python", file_location + "04_h2o_glm.py"])
 subprocess.call(["python", file_location + "04_knn.py"])
